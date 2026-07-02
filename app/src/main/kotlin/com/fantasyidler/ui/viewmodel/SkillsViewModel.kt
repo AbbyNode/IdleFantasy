@@ -163,7 +163,7 @@ class SkillsViewModel @Inject constructor(
                 fishingEfficiency     = toolEfficiency(equipped[EquipSlot.FISHING_ROD], EquipSlot.FISHING_ROD, 0),
                 farmingEfficiency     = toolEfficiency(equipped[EquipSlot.HOE],         EquipSlot.HOE,         0),
                 xpBonusMult           = (if (flags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0f else 1.0f) * ChurchRepository.xpMultiplier(flags),
-                sessionDurationMs     = SkillSimulator.sessionDurationMs(),
+                sessionDurationMs     = SkillSimulator.sessionDurationMs(levels[Skills.AGILITY] ?: 1, flags.skillPrestige[Skills.AGILITY] ?: 0),
                 skillPrestige         = flags.skillPrestige,
                 inventory             = inv,
                 cropsReadyCount       = cropsReady,

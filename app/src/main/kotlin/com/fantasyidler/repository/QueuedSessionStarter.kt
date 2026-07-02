@@ -68,7 +68,7 @@ class QueuedSessionStarter @Inject constructor(
      * Used to decide whether a queued session fits within remaining catch-up time.
      */
     private fun estimateDuration(action: QueuedAction, agilityLevel: Int, agilityPrestige: Int = 0): Long {
-        val base = SkillSimulator.sessionDurationMs()
+        val base = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige)
         val perItem = base / 60L
         return when (action.skillName) {
             Skills.MINING, Skills.WOODCUTTING, Skills.FISHING,

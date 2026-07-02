@@ -46,72 +46,26 @@ class SkillSimulatorPureTest {
 
     @Test
     fun `sessionDurationMs scales linearly from 60 to 40 minutes`() {
-        SkillSimulator.setAgilityContext(1, 0)
-        try {
-            assertEquals(60 * 60_000L, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
-        
-        SkillSimulator.setAgilityContext(25, 0)
-        try {
-            assertEquals(55 * 60_000L, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
-        
-        SkillSimulator.setAgilityContext(50, 0)
-        try {
-            assertEquals(50 * 60_000L, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
-        
-        SkillSimulator.setAgilityContext(75, 0)
-        try {
-            assertEquals(45 * 60_000L, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
-        
-        SkillSimulator.setAgilityContext(99, 0)
-        try {
-            assertEquals(40 * 60_000L, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
+        assertEquals(60 * 60_000L, SkillSimulator.sessionDurationMs(1, 0))
+        assertEquals(55 * 60_000L, SkillSimulator.sessionDurationMs(25, 0))
+        assertEquals(50 * 60_000L, SkillSimulator.sessionDurationMs(50, 0))
+        assertEquals(45 * 60_000L, SkillSimulator.sessionDurationMs(75, 0))
+        assertEquals(40 * 60_000L, SkillSimulator.sessionDurationMs(99, 0))
     }
 
     @Test
     fun `sessionDurationMs clamps out-of-range levels and never increases with level`() {
-        SkillSimulator.setAgilityContext(1, 0)
-        try {
-            val duration1 = SkillSimulator.sessionDurationMs()
-            SkillSimulator.setAgilityContext(0, 0)
-            assertEquals(duration1, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
+        val duration1 = SkillSimulator.sessionDurationMs(1, 0)
+        assertEquals(duration1, SkillSimulator.sessionDurationMs(0, 0))
         
-        SkillSimulator.setAgilityContext(99, 0)
-        try {
-            val duration99 = SkillSimulator.sessionDurationMs()
-            SkillSimulator.setAgilityContext(200, 0)
-            assertEquals(duration99, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
-        }
+        val duration99 = SkillSimulator.sessionDurationMs(99, 0)
+        assertEquals(duration99, SkillSimulator.sessionDurationMs(200, 0))
         
         var previous = Long.MAX_VALUE
         for (level in 1..99) {
-            SkillSimulator.setAgilityContext(level, 0)
-            try {
-                val ms = SkillSimulator.sessionDurationMs()
-                assertTrue("duration increased at level $level", ms <= previous)
-                previous = ms
-            } finally {
-                SkillSimulator.clearAgilityContext()
-            }
+            val ms = SkillSimulator.sessionDurationMs(level, 0)
+            assertTrue("duration increased at level $level", ms <= previous)
+            previous = ms
         }
     }
 }
