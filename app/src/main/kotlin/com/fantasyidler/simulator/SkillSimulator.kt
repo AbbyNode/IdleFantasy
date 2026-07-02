@@ -31,6 +31,7 @@ object SkillSimulator {
         val durationMs: Long,
     )
 
+
     // ------------------------------------------------------------------
     // Mining — picks a specific ore; bonus gem drops rolled independently
     // ------------------------------------------------------------------
@@ -398,7 +399,7 @@ object SkillSimulator {
      *   level 75 → 45 min
      *   level 99 → 40 min
      */
-    fun sessionDurationMs(agilityLevel: Int, agilityPrestige: Int = 0): Long {
+    fun sessionDurationMs(agilityLevel: Int = 1, agilityPrestige: Int = 0): Long {
         val fraction = (agilityLevel - 1).coerceIn(0, 98) / 98.0
         val maxReduction = 20.0 + agilityPrestige.coerceIn(0, 3) * (10.0 / 3.0)
         val minutes = (60.0 - maxReduction * fraction).roundToInt()

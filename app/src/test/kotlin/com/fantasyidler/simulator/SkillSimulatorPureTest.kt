@@ -43,22 +43,27 @@ class SkillSimulatorPureTest {
         }
     }
 
+
     @Test
     fun `sessionDurationMs scales linearly from 60 to 40 minutes`() {
-        assertEquals(60 * 60_000L, SkillSimulator.sessionDurationMs(1))
-        assertEquals(55 * 60_000L, SkillSimulator.sessionDurationMs(25))
-        assertEquals(50 * 60_000L, SkillSimulator.sessionDurationMs(50))
-        assertEquals(45 * 60_000L, SkillSimulator.sessionDurationMs(75))
-        assertEquals(40 * 60_000L, SkillSimulator.sessionDurationMs(99))
+        assertEquals(60 * 60_000L, SkillSimulator.sessionDurationMs(1, 0))
+        assertEquals(55 * 60_000L, SkillSimulator.sessionDurationMs(25, 0))
+        assertEquals(50 * 60_000L, SkillSimulator.sessionDurationMs(50, 0))
+        assertEquals(45 * 60_000L, SkillSimulator.sessionDurationMs(75, 0))
+        assertEquals(40 * 60_000L, SkillSimulator.sessionDurationMs(99, 0))
     }
 
     @Test
     fun `sessionDurationMs clamps out-of-range levels and never increases with level`() {
-        assertEquals(SkillSimulator.sessionDurationMs(1), SkillSimulator.sessionDurationMs(0))
-        assertEquals(SkillSimulator.sessionDurationMs(99), SkillSimulator.sessionDurationMs(200))
+        val duration1 = SkillSimulator.sessionDurationMs(1, 0)
+        assertEquals(duration1, SkillSimulator.sessionDurationMs(0, 0))
+        
+        val duration99 = SkillSimulator.sessionDurationMs(99, 0)
+        assertEquals(duration99, SkillSimulator.sessionDurationMs(200, 0))
+        
         var previous = Long.MAX_VALUE
         for (level in 1..99) {
-            val ms = SkillSimulator.sessionDurationMs(level)
+            val ms = SkillSimulator.sessionDurationMs(level, 0)
             assertTrue("duration increased at level $level", ms <= previous)
             previous = ms
         }

@@ -103,7 +103,7 @@ class WorkerSkillsViewModel @Inject constructor(
             val equipped: Map<String, String?> = json.decodeFromString(player.equipped)
             val flags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
             val inv: Map<String, Int>        = json.decodeFromString(player.inventory)
-            val agilityMs   = SkillSimulator.sessionDurationMs(levels[Skills.AGILITY] ?: 1)
+            val agilityMs   = SkillSimulator.sessionDurationMs(levels[Skills.AGILITY] ?: 1, flags.skillPrestige[Skills.AGILITY] ?: 0)
             val currentWorker = if (extra.selectedSlot == 2) flags.hiredWorker2 else flags.hiredWorker
             val tierDurationMs = currentWorker?.tier?.durationMs ?: agilityMs
             extra.copy(
