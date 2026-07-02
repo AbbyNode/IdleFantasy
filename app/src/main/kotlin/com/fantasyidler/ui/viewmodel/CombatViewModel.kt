@@ -338,7 +338,7 @@ class CombatViewModel @Inject constructor(
                         skillName           = "combat",
                         activityKey         = dungeonKey,
                         skillDisplayName    = dungeonName,
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                         equippedSnapshot    = player.equipped,
                         arrowsKey           = _extra.value.selectedArrowKey ?: dungeonFlags.equippedArrows,
                         spellName           = queuedSpell?.name ?: dungeonFlags.activeSpell,
@@ -663,7 +663,7 @@ class CombatViewModel @Inject constructor(
                     bossFrames,
                 )
                 val agilityLevel   = levels[Skills.AGILITY] ?: 1
-                val frameMs        = SkillSimulator.sessionDurationMs() / 60L
+                val frameMs        = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige) / 60L
                 val bossDurationMs = boss.durationMinutes * frameMs
                 sessionRepo.startSession(
                     skillName        = "boss",

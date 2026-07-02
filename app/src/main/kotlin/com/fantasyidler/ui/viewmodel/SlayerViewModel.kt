@@ -254,7 +254,7 @@ class SlayerViewModel @Inject constructor(
                     skillName           = "combat",
                     activityKey         = dungeonKey,
                     skillDisplayName    = dungeonName,
-                    estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                    estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                     equippedSnapshot    = player.equipped,
                     arrowsKey           = flags.equippedArrows,
                     spellName           = flags.activeSpell,

@@ -573,7 +573,7 @@ class SkillsViewModel @Inject constructor(
 
                 val agilityLevel = levels[Skills.AGILITY] ?: 1
                 val prayerActFlags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
-                val perBoneMs    = SkillSimulator.sessionDurationMs() / 60
+                val perBoneMs    = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige) / 60
                 val framesJson   = json.encodeToString(
                     json.serializersModule.serializer<List<SessionFrame>>(),
                     frames,
@@ -631,7 +631,7 @@ class SkillsViewModel @Inject constructor(
                         skillName           = Skills.THIEVING,
                         activityKey         = npcKey,
                         skillDisplayName    = "Thieving",
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                     )
                 )
                 if (enqueued) queuedSessionStarter.startNextQueued()
@@ -725,7 +725,7 @@ class SkillsViewModel @Inject constructor(
                         activityKey         = activityKey,
                         skillDisplayName    = displayName,
                         estimatedXpGain     = estimatedXpGain,
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                     )
                 )
                 if (enqueued) queuedSessionStarter.startNextQueued()

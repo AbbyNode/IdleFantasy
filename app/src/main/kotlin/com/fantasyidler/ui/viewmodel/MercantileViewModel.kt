@@ -102,7 +102,7 @@ class MercantileViewModel @Inject constructor(
                         skillName           = Skills.MERCANTILE,
                         activityKey         = routeId,
                         skillDisplayName    = "Mercantile",
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                         coinRefund          = route.coinCost.toLong(),
                     )
                 )

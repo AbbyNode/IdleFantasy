@@ -216,7 +216,7 @@ class CarnivalViewModel @Inject constructor(
                     skillName           = "carnival",
                     activityKey         = activityKey,
                     skillDisplayName    = displayName,
-                    estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                    estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                 )
             )
             if (enqueued) queuedSessionStarter.startNextQueued()

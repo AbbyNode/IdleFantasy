@@ -136,7 +136,7 @@ class ExpeditionsViewModel @Inject constructor(
                         skillName           = "expedition",
                         activityKey         = key,
                         skillDisplayName    = dungeon.displayName,
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
                     )
                 )
                 _extra.update {
