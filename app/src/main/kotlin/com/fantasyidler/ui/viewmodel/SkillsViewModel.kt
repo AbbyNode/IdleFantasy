@@ -410,7 +410,7 @@ class SkillsViewModel @Inject constructor(
                 return@launch
             }
 
-             if (sessionRepo.getActiveSession() != null) {
+            if (sessionRepo.getActiveSession() != null) {
                 val actDisplay = runeKey.replace('_', ' ').replaceFirstChar { it.uppercase() }
                 val levels     = json.decodeFromString<Map<String, Int>>(player.skillLevels)
                 val agility    = levels[Skills.AGILITY]      ?: 1
