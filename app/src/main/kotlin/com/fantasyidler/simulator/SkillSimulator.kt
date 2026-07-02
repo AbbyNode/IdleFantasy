@@ -31,6 +31,28 @@ object SkillSimulator {
         val durationMs: Long,
     )
 
+    // Thread-local context for agility level and prestige used by sessionDurationMs
+    private val agilityLevelContext = ThreadLocal<Int>()
+    private val agilityPrestigeContext = ThreadLocal<Int>()
+
+    /**
+     * Sets the agility context for the current thread. Must be called before
+     * calling [sessionDurationMs] to provide the values it needs.
+     */
+    internal fun setAgilityContext(agilityLevel: Int, agilityPrestige: Int = 0) {
+        agilityLevelContext.set(agilityLevel)
+        agilityPrestigeContext.set(agilityPrestige)
+    }
+
+    /**
+     * Clears the agility context for the current thread. Should be called after
+     * all simulator functions that use [sessionDurationMs] complete.
+     */
+    internal fun clearAgilityContext() {
+        agilityLevelContext.remove()
+        agilityPrestigeContext.remove()
+    }
+
     // ------------------------------------------------------------------
     // Mining — picks a specific ore; bonus gem drops rolled independently
     // ------------------------------------------------------------------
@@ -57,52 +79,57 @@ object SkillSimulator {
         petDropChance: Double = 0.0,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
-        var oreAccumulator = 0f
+        setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
+            var oreAccumulator = 0f
 
-        for (minute in 1..60) {
-            val xpBefore = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
 
-            val baseXp = (oreData.xpPerOre * toolEfficiency).toInt()
-            val xpGain = applyPetBoost(baseXp, petBoostPct)
+                val baseXp = (oreData.xpPerOre * toolEfficiency).toInt()
+                val xpGain = applyPetBoost(baseXp, petBoostPct)
 
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            oreAccumulator += toolEfficiency
-            val oreQty = oreAccumulator.toInt().coerceAtLeast(1)
-            oreAccumulator -= oreQty
-            val items = mutableMapOf(oreKey to oreQty)
+                oreAccumulator += toolEfficiency
+                val oreQty = oreAccumulator.toInt().coerceAtLeast(1)
+                oreAccumulator -= oreQty
+                val items = mutableMapOf(oreKey to oreQty)
 
-            // Bonus gem rolls — one independent roll per ore mined per gem type
-            for (i in 0 until oreQty) {
-                for ((gemKey, gemData) in gems) {
-                    if (random.nextDouble() < gemData.dropRate) {
-                        items[gemKey] = (items[gemKey] ?: 0) + 1
+                // Bonus gem rolls — one independent roll per ore mined per gem type
+                for (i in 0 until oreQty) {
+                    for ((gemKey, gemData) in gems) {
+                        if (random.nextDouble() < gemData.dropRate) {
+                            items[gemKey] = (items[gemKey] ?: 0) + 1
+                        }
                     }
                 }
-            }
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
-            }
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
 
-            frames.add(
-                SessionFrame(
-                    minute = minute,
-                    xpGain = xpGain,
-                    xpBefore = xpBefore,
-                    xpAfter = currentXp,
-                    levelBefore = levelBefore,
-                    levelAfter = levelAfter,
-                    items = items,
-                    leveledUp = levelAfter > levelBefore,
+                frames.add(
+                    SessionFrame(
+                        minute = minute,
+                        xpGain = xpGain,
+                        xpBefore = xpBefore,
+                        xpAfter = currentXp,
+                        levelBefore = levelBefore,
+                        levelAfter = levelAfter,
+                        items = items,
+                        leveledUp = levelAfter > levelBefore,
+                    )
                 )
-            )
-        }
+            }
 
-        return Result(frames, sessionDurationMs(agilityLevel, agilityPrestige))
+            return Result(frames, sessionDurationMs())
+        } finally {
+            clearAgilityContext()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -125,43 +152,48 @@ object SkillSimulator {
         petDropChance: Double = 0.0,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
-        var logAccumulator = 0f
+        setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
+            var logAccumulator = 0f
 
-        for (minute in 1..60) {
-            val xpBefore = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
 
-            val baseXp = (treeData.xpPerLog * toolEfficiency).toInt()
-            val xpGain = applyPetBoost(baseXp, petBoostPct)
+                val baseXp = (treeData.xpPerLog * toolEfficiency).toInt()
+                val xpGain = applyPetBoost(baseXp, petBoostPct)
 
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            logAccumulator += toolEfficiency
-            val logQty = logAccumulator.toInt().coerceAtLeast(1)
-            logAccumulator -= logQty
-            val items = mutableMapOf(treeData.logName to logQty)
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
+                logAccumulator += toolEfficiency
+                val logQty = logAccumulator.toInt().coerceAtLeast(1)
+                logAccumulator -= logQty
+                val items = mutableMapOf(treeData.logName to logQty)
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
+
+                frames.add(
+                    SessionFrame(
+                        minute = minute,
+                        xpGain = xpGain,
+                        xpBefore = xpBefore,
+                        xpAfter = currentXp,
+                        levelBefore = levelBefore,
+                        levelAfter = levelAfter,
+                        items = items,
+                        leveledUp = levelAfter > levelBefore,
+                    )
+                )
             }
 
-            frames.add(
-                SessionFrame(
-                    minute = minute,
-                    xpGain = xpGain,
-                    xpBefore = xpBefore,
-                    xpAfter = currentXp,
-                    levelBefore = levelBefore,
-                    levelAfter = levelAfter,
-                    items = items,
-                    leveledUp = levelAfter > levelBefore,
-                )
-            )
+            return Result(frames, sessionDurationMs())
+        } finally {
+            clearAgilityContext()
         }
-
-        return Result(frames, sessionDurationMs(agilityLevel, agilityPrestige))
     }
 
     // ------------------------------------------------------------------
@@ -181,54 +213,59 @@ object SkillSimulator {
         fishingSkillData: GatheringSkillData? = null,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
-        var fishAccumulator = 0f
+        setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
+            var fishAccumulator = 0f
 
-        for (minute in 1..60) {
-            val xpBefore    = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore    = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
 
-            val baseXp = (fishData.xpPerCatch * rodEfficiency).toInt()
-            val xpGain = applyPetBoost(baseXp, petBoostPct)
+                val baseXp = (fishData.xpPerCatch * rodEfficiency).toInt()
+                val xpGain = applyPetBoost(baseXp, petBoostPct)
 
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            fishAccumulator += rodEfficiency
-            val fishQty = fishAccumulator.toInt().coerceAtLeast(1)
-            fishAccumulator -= fishQty
-            val items = mutableMapOf<String, Int>()
-            if (fishingSkillData != null && random.nextDouble() > 0.8) {
-                val dropTable = getTierData(fishingSkillData.dropTables, levelBefore)
-                for (entry in dropTable) {
-                    if (random.nextDouble() < entry.chance) {
-                        items[entry.item] = (items[entry.item] ?: 0) + 1
+                fishAccumulator += rodEfficiency
+                val fishQty = fishAccumulator.toInt().coerceAtLeast(1)
+                fishAccumulator -= fishQty
+                val items = mutableMapOf<String, Int>()
+                if (fishingSkillData != null && random.nextDouble() > 0.8) {
+                    val dropTable = getTierData(fishingSkillData.dropTables, levelBefore)
+                    for (entry in dropTable) {
+                        if (random.nextDouble() < entry.chance) {
+                            items[entry.item] = (items[entry.item] ?: 0) + 1
+                        }
                     }
+                    if (items.isEmpty()) items[fishKey] = fishQty
+                } else {
+                    items[fishKey] = fishQty
                 }
-                if (items.isEmpty()) items[fishKey] = fishQty
-            } else {
-                items[fishKey] = fishQty
-            }
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
-            }
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
 
-            frames.add(
-                SessionFrame(
-                    minute      = minute,
-                    xpGain      = xpGain,
-                    xpBefore    = xpBefore,
-                    xpAfter     = currentXp,
-                    levelBefore = levelBefore,
-                    levelAfter  = levelAfter,
-                    items       = items,
-                    leveledUp   = levelAfter > levelBefore,
+                frames.add(
+                    SessionFrame(
+                        minute      = minute,
+                        xpGain      = xpGain,
+                        xpBefore    = xpBefore,
+                        xpAfter     = currentXp,
+                        levelBefore = levelBefore,
+                        levelAfter  = levelAfter,
+                        items       = items,
+                        leveledUp   = levelAfter > levelBefore,
+                    )
                 )
-            )
-        }
+            }
 
-        return Result(frames, sessionDurationMs(agilityLevel, agilityPrestige))
+            return Result(frames, sessionDurationMs())
+        } finally {
+            clearAgilityContext()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -252,51 +289,56 @@ object SkillSimulator {
         forcedDropPerFrame: String? = null,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
+        setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
 
-        for (minute in 1..60) {
-            val xpBefore = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
 
-            val xpRange = getTierData(skillData.xpRanges, levelBefore)
-            val baseXp = (random.nextInt(xpRange.min, xpRange.max + 1) * toolEfficiency).toInt()
-            val xpGain = applyPetBoost(baseXp, petBoostPct)
+                val xpRange = getTierData(skillData.xpRanges, levelBefore)
+                val baseXp = (random.nextInt(xpRange.min, xpRange.max + 1) * toolEfficiency).toInt()
+                val xpGain = applyPetBoost(baseXp, petBoostPct)
 
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            // Roll drops from level-appropriate table, using level BEFORE xp gain
-            val dropTable = if (skillData.dropTables.isEmpty()) emptyList()
-                            else getTierData(skillData.dropTables, levelBefore)
-            val items = mutableMapOf<String, Int>()
-            for (entry in dropTable) {
-                if (random.nextDouble() < entry.chance) {
-                    items[entry.item] = (items[entry.item] ?: 0) + 1
+                // Roll drops from level-appropriate table, using level BEFORE xp gain
+                val dropTable = if (skillData.dropTables.isEmpty()) emptyList()
+                                else getTierData(skillData.dropTables, levelBefore)
+                val items = mutableMapOf<String, Int>()
+                for (entry in dropTable) {
+                    if (random.nextDouble() < entry.chance) {
+                        items[entry.item] = (items[entry.item] ?: 0) + 1
+                    }
                 }
-            }
-            if (forcedDropPerFrame != null) {
-                items[forcedDropPerFrame] = (items[forcedDropPerFrame] ?: 0) + 1
-            }
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
-            }
+                if (forcedDropPerFrame != null) {
+                    items[forcedDropPerFrame] = (items[forcedDropPerFrame] ?: 0) + 1
+                }
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
 
-            frames.add(
-                SessionFrame(
-                    minute = minute,
-                    xpGain = xpGain,
-                    xpBefore = xpBefore,
-                    xpAfter = currentXp,
-                    levelBefore = levelBefore,
-                    levelAfter = levelAfter,
-                    items = items,
-                    leveledUp = levelAfter > levelBefore,
+                frames.add(
+                    SessionFrame(
+                        minute = minute,
+                        xpGain = xpGain,
+                        xpBefore = xpBefore,
+                        xpAfter = currentXp,
+                        levelBefore = levelBefore,
+                        levelAfter = levelAfter,
+                        items = items,
+                        leveledUp = levelAfter > levelBefore,
+                    )
                 )
-            )
-        }
+            }
 
-        return Result(frames, sessionDurationMs(agilityLevel, agilityPrestige))
+            return Result(frames, sessionDurationMs())
+        } finally {
+            clearAgilityContext()
+        }
     }
 
     // ------------------------------------------------------------------
@@ -322,44 +364,49 @@ object SkillSimulator {
         petDropChance: Double = 0.0,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
+        setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
 
-        val successRate = (0.80 + (agilityLevel - courseData.levelRequired) * 0.02)
-            .coerceAtMost(0.95)
+            val successRate = (0.80 + (agilityLevel - courseData.levelRequired) * 0.02)
+                .coerceAtMost(0.95)
 
-        for (minute in 1..60) {
-            val xpBefore    = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore    = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
 
-            val successfulLaps = (0 until LAPS_PER_MINUTE).count { random.nextDouble() < successRate }
-            val baseXp = successfulLaps * courseData.xpPerSuccess
-            val xpGain = applyPetBoost(baseXp, petBoostPct)
+                val successfulLaps = (0 until LAPS_PER_MINUTE).count { random.nextDouble() < successRate }
+                val baseXp = successfulLaps * courseData.xpPerSuccess
+                val xpGain = applyPetBoost(baseXp, petBoostPct)
 
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            val items = mutableMapOf<String, Int>()
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
+                val items = mutableMapOf<String, Int>()
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
+
+                frames.add(
+                    SessionFrame(
+                        minute      = minute,
+                        xpGain      = xpGain,
+                        xpBefore    = xpBefore,
+                        xpAfter     = currentXp,
+                        levelBefore = levelBefore,
+                        levelAfter  = levelAfter,
+                        items       = items,
+                        leveledUp   = levelAfter > levelBefore,
+                        success     = successfulLaps > 0,
+                    )
+                )
             }
 
-            frames.add(
-                SessionFrame(
-                    minute      = minute,
-                    xpGain      = xpGain,
-                    xpBefore    = xpBefore,
-                    xpAfter     = currentXp,
-                    levelBefore = levelBefore,
-                    levelAfter  = levelAfter,
-                    items       = items,
-                    leveledUp   = levelAfter > levelBefore,
-                    success     = successfulLaps > 0,
-                )
-            )
+            return Result(frames, sessionDurationMs())
+        } finally {
+            clearAgilityContext()
         }
-
-        return Result(frames, sessionDurationMs(agilityLevel, agilityPrestige))
     }
 
     // ------------------------------------------------------------------
@@ -391,6 +438,8 @@ object SkillSimulator {
      * speed bonus. Sessions scale linearly from 60 min at level 1 to 40 min at level 99.
      * Each agility prestige level reduces the level-99 floor by ~3.33 min (P3 = 30 min).
      *
+     * Requires that [setAgilityContext] has been called to set the agility level and prestige.
+     *
      * Examples (agilityPrestige=0):
      *   level  1 → 60 min
      *   level 25 → 55 min
@@ -398,7 +447,9 @@ object SkillSimulator {
      *   level 75 → 45 min
      *   level 99 → 40 min
      */
-    fun sessionDurationMs(agilityLevel: Int, agilityPrestige: Int = 0): Long {
+    fun sessionDurationMs(): Long {
+        val agilityLevel = agilityLevelContext.get() ?: 1
+        val agilityPrestige = agilityPrestigeContext.get() ?: 0
         val fraction = (agilityLevel - 1).coerceIn(0, 98) / 98.0
         val maxReduction = 20.0 + agilityPrestige.coerceIn(0, 3) * (10.0 / 3.0)
         val minutes = (60.0 - maxReduction * fraction).roundToInt()

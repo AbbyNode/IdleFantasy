@@ -345,7 +345,7 @@ class CraftingViewModel @Inject constructor(
             // Enqueue if a session is already running
             if (sessionRepo.getActiveSession() != null) {
                 val agility   = state.skillLevels[Skills.AGILITY] ?: 1
-                val perItemMs = SkillSimulator.sessionDurationMs(agility) / 60
+                val perItemMs = SkillSimulator.sessionDurationMs() / 60
                 val totalOutput = qty * recipe.outputQty
                 val craftFlags = playerRepo.getFlags()
                 val xpQueueMult = (if (craftFlags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0 else 1.0) * ChurchRepository.xpMultiplier(craftFlags)
@@ -403,7 +403,7 @@ class CraftingViewModel @Inject constructor(
             val levels: Map<String, Int> = json.decodeFromString(player.skillLevels)
             val agilityLevel = levels[Skills.AGILITY] ?: 1
             // 1 item per minute, reduced by agility (same formula as gathering skills)
-            val perItemMs = SkillSimulator.sessionDurationMs(agilityLevel) / 60
+            val perItemMs = SkillSimulator.sessionDurationMs() / 60
 
             val framesJson = json.encodeToString(
                 json.serializersModule.serializer<List<SessionFrame>>(),

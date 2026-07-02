@@ -192,7 +192,7 @@ class TowerViewModel @Inject constructor(
                         skillName           = "tower",
                         activityKey         = "tower_floor_$nextFloor",
                         skillDisplayName    = "Infinite Tower: Floor $nextFloor",
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agility, flags.skillPrestige[Skills.AGILITY] ?: 0),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
                     )
                 )
                 if (enqueued) queuedSessionStarter.startNextQueued()

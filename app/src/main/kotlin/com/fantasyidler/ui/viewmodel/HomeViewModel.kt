@@ -199,7 +199,7 @@ class HomeViewModel @Inject constructor(
             val levels: Map<String, Int> = json.decodeFromString(player.skillLevels)
             val agilityLevel    = levels[Skills.AGILITY] ?: 1
             val agilityPrestige = flags.skillPrestige[Skills.AGILITY] ?: 0
-            val sessionMs       = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige)
+            val sessionMs       = SkillSimulator.sessionDurationMs()
             val perItemMs    = sessionMs / 60
             val queueStart   = session?.endsAt ?: System.currentTimeMillis()
             val queueEndsAt  = if (flags.sessionQueue.isEmpty()) 0L

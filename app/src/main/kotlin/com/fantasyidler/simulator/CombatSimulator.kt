@@ -44,17 +44,19 @@ object CombatSimulator {
         runeCostPerAttack: Int = 1,
         random: Random = Random.Default,
     ): SkillSimulator.Result {
-        val effAttack   = playerAttack   + (potionBonuses["attack"]   ?: 0)
-        val effStrength = playerStrength + (potionBonuses["strength"] ?: 0)
-        val effDefence  = playerDefence  + (potionBonuses["defense"]  ?: 0) + blessingDefBonus
-        val effRanged   = playerRanged   + (potionBonuses["ranged"]   ?: 0)
-        val effMagic    = playerMagic    + (potionBonuses["magic"]    ?: 0)
+        SkillSimulator.setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            val effAttack   = playerAttack   + (potionBonuses["attack"]   ?: 0)
+            val effStrength = playerStrength + (potionBonuses["strength"] ?: 0)
+            val effDefence  = playerDefence  + (potionBonuses["defense"]  ?: 0) + blessingDefBonus
+            val effRanged   = playerRanged   + (potionBonuses["ranged"]   ?: 0)
+            val effMagic    = playerMagic    + (potionBonuses["magic"]    ?: 0)
 
-        val frames = mutableListOf<SessionFrame>()
+            val frames = mutableListOf<SessionFrame>()
 
-        val spawnPool = dungeon.enemySpawns.flatMap { spawn ->
-            List(spawn.weight) { spawn.enemy }
-        }.ifEmpty { return SkillSimulator.Result(emptyList(), SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige)) }
+            val spawnPool = dungeon.enemySpawns.flatMap { spawn ->
+                List(spawn.weight) { spawn.enemy }
+            }.ifEmpty { return SkillSimulator.Result(emptyList(), SkillSimulator.sessionDurationMs()) }
 
         val maxHp = playerHp * 10
         var currentHp = maxHp
@@ -260,8 +262,11 @@ object CombatSimulator {
             }
         }
 
-        val fullDurationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige)
+        val fullDurationMs = SkillSimulator.sessionDurationMs()
         return SkillSimulator.Result(frames, fullDurationMs)
+        } finally {
+            SkillSimulator.clearAgilityContext()
+        }
     }
 
     // ------------------------------------------------------------------

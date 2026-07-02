@@ -328,7 +328,7 @@ class PlayerRepository @Inject constructor(
             skillName           = "combat",
             activityKey         = dungeonKey,
             skillDisplayName    = dungeonDisplayName,
-            estimatedDurationMs = SkillSimulator.sessionDurationMs(agility, agilityPrestige),
+            estimatedDurationMs = SkillSimulator.sessionDurationMs(),
             equippedSnapshot    = player.equipped,
             arrowsKey           = flags.equippedArrows,
             spellName           = flags.activeSpell,

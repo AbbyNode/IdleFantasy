@@ -163,7 +163,7 @@ class SkillsViewModel @Inject constructor(
                 fishingEfficiency     = toolEfficiency(equipped[EquipSlot.FISHING_ROD], EquipSlot.FISHING_ROD, 0),
                 farmingEfficiency     = toolEfficiency(equipped[EquipSlot.HOE],         EquipSlot.HOE,         0),
                 xpBonusMult           = (if (flags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0f else 1.0f) * ChurchRepository.xpMultiplier(flags),
-                sessionDurationMs     = SkillSimulator.sessionDurationMs(levels[Skills.AGILITY] ?: 1, flags.skillPrestige[Skills.AGILITY] ?: 0),
+                sessionDurationMs     = SkillSimulator.sessionDurationMs(),
                 skillPrestige         = flags.skillPrestige,
                 inventory             = inv,
                 cropsReadyCount       = cropsReady,
@@ -362,7 +362,7 @@ class SkillsViewModel @Inject constructor(
             val levels: Map<String, Int> = json.decodeFromString(player.skillLevels)
             val agility = levels[Skills.AGILITY] ?: 1
             val flags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
-            val perLogMs = SkillSimulator.sessionDurationMs(agility, flags.skillPrestige[Skills.AGILITY] ?: 0) / 60L
+            val perLogMs = SkillSimulator.sessionDurationMs() / 60L
             val logXp = gameData.logs[logKey]?.xpPerLog?.toLong() ?: 0L
             val xpQueueMult = (if (flags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0 else 1.0) * ChurchRepository.xpMultiplier(flags)
             val action = QueuedAction(
@@ -416,7 +416,7 @@ class SkillsViewModel @Inject constructor(
                 val agility    = levels[Skills.AGILITY]      ?: 1
                 val rcLevel    = levels[Skills.RUNECRAFTING]  ?: 1
                 val rcFlags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
-                val perItemMs  = SkillSimulator.sessionDurationMs(agility, rcFlags.skillPrestige[Skills.AGILITY] ?: 0) / 60
+                val perItemMs  = SkillSimulator.sessionDurationMs() / 60
                 val ashBon     = catalystKey?.let { ashRuneBonusForKey(it) } ?: 0
                 val mult       = when { rcLevel >= 75 -> 3; rcLevel >= 50 -> 2; else -> 1 } + ashBon
                 val xpQueueMult = (if (rcFlags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0 else 1.0) * ChurchRepository.xpMultiplier(rcFlags)
@@ -487,7 +487,7 @@ class SkillsViewModel @Inject constructor(
                     )
                 )
 
-                val perEssenceMs = SkillSimulator.sessionDurationMs(agilityLevel, rcActFlags.skillPrestige[Skills.AGILITY] ?: 0) / 60
+                val perEssenceMs = SkillSimulator.sessionDurationMs() / 60
                 val framesJson   = json.encodeToString(
                     json.serializersModule.serializer<List<SessionFrame>>(),
                     frames,
@@ -526,7 +526,7 @@ class SkillsViewModel @Inject constructor(
             if (sessionRepo.getActiveSession() != null) {
                 val agility   = (json.decodeFromString<Map<String, Int>>(player.skillLevels))[Skills.AGILITY] ?: 1
                 val prayerFlags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
-                val perBoneMs = SkillSimulator.sessionDurationMs(agility, prayerFlags.skillPrestige[Skills.AGILITY] ?: 0) / 60
+                val perBoneMs = SkillSimulator.sessionDurationMs() / 60
                 val xpQueueMult = (if (prayerFlags.xpBoostExpiresAt > System.currentTimeMillis()) 2.0 else 1.0) * ChurchRepository.xpMultiplier(prayerFlags)
                 val enqueued = playerRepo.enqueueAction(
                     QueuedAction(
@@ -573,7 +573,7 @@ class SkillsViewModel @Inject constructor(
 
                 val agilityLevel = levels[Skills.AGILITY] ?: 1
                 val prayerActFlags = try { json.decodeFromString<PlayerFlags>(player.flags) } catch (_: Exception) { PlayerFlags() }
-                val perBoneMs    = SkillSimulator.sessionDurationMs(agilityLevel, prayerActFlags.skillPrestige[Skills.AGILITY] ?: 0) / 60
+                val perBoneMs    = SkillSimulator.sessionDurationMs() / 60
                 val framesJson   = json.encodeToString(
                     json.serializersModule.serializer<List<SessionFrame>>(),
                     frames,
@@ -631,7 +631,7 @@ class SkillsViewModel @Inject constructor(
                         skillName           = Skills.THIEVING,
                         activityKey         = npcKey,
                         skillDisplayName    = "Thieving",
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agility, thievingFlags.skillPrestige[Skills.AGILITY] ?: 0),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
                     )
                 )
                 if (enqueued) queuedSessionStarter.startNextQueued()
@@ -725,7 +725,7 @@ class SkillsViewModel @Inject constructor(
                         activityKey         = activityKey,
                         skillDisplayName    = displayName,
                         estimatedXpGain     = estimatedXpGain,
-                        estimatedDurationMs = SkillSimulator.sessionDurationMs(agility, agilityPrestige),
+                        estimatedDurationMs = SkillSimulator.sessionDurationMs(),
                     )
                 )
                 if (enqueued) queuedSessionStarter.startNextQueued()

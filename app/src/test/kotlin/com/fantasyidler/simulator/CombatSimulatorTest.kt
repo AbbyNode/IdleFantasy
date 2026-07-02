@@ -92,6 +92,11 @@ class CombatSimulatorTest {
             agilityLevel = 1,
         )
         assertTrue(result.frames.isEmpty())
-        assertEquals(SkillSimulator.sessionDurationMs(1), result.durationMs)
+        SkillSimulator.setAgilityContext(1, 0)
+        try {
+            assertEquals(SkillSimulator.sessionDurationMs(), result.durationMs)
+        } finally {
+            SkillSimulator.clearAgilityContext()
+        }
     }
 }

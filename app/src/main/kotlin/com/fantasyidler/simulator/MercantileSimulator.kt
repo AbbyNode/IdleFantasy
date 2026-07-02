@@ -22,41 +22,46 @@ object MercantileSimulator {
         petDropChance: Double = 0.0,
         random: Random = Random.Default,
     ): Result {
-        var currentXp = startXp
-        val frames = mutableListOf<SessionFrame>()
+        SkillSimulator.setAgilityContext(agilityLevel, agilityPrestige)
+        try {
+            var currentXp = startXp
+            val frames = mutableListOf<SessionFrame>()
 
-        val xpRange   = rangeForLevel(XpTable.levelForXp(startXp),   route.xpRanges.mapValues { XpRange(it.value.min, it.value.max) })
-        val coinRange = rangeForCoin(XpTable.levelForXp(startXp), route.coinRanges)
+            val xpRange   = rangeForLevel(XpTable.levelForXp(startXp),   route.xpRanges.mapValues { XpRange(it.value.min, it.value.max) })
+            val coinRange = rangeForCoin(XpTable.levelForXp(startXp), route.coinRanges)
 
-        for (minute in 1..60) {
-            val xpBefore   = currentXp
-            val levelBefore = XpTable.levelForXp(currentXp)
-            val xpGain     = random.nextInt(xpRange.min, xpRange.max + 1)
-            currentXp += xpGain
-            val levelAfter = XpTable.levelForXp(currentXp)
+            for (minute in 1..60) {
+                val xpBefore   = currentXp
+                val levelBefore = XpTable.levelForXp(currentXp)
+                val xpGain     = random.nextInt(xpRange.min, xpRange.max + 1)
+                currentXp += xpGain
+                val levelAfter = XpTable.levelForXp(currentXp)
 
-            val coinReturn = random.nextInt(coinRange.min, coinRange.max + 1)
-            val items = mutableMapOf("_coins" to coinReturn)
-            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                items[petDropKey] = 1
+                val coinReturn = random.nextInt(coinRange.min, coinRange.max + 1)
+                val items = mutableMapOf("_coins" to coinReturn)
+                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                    items[petDropKey] = 1
+                }
+
+                frames += SessionFrame(
+                    minute      = minute,
+                    xpGain      = xpGain,
+                    xpBefore    = xpBefore,
+                    xpAfter     = currentXp,
+                    levelBefore = levelBefore,
+                    levelAfter  = levelAfter,
+                    leveledUp   = levelAfter > levelBefore,
+                    items       = items,
+                )
             }
 
-            frames += SessionFrame(
-                minute      = minute,
-                xpGain      = xpGain,
-                xpBefore    = xpBefore,
-                xpAfter     = currentXp,
-                levelBefore = levelBefore,
-                levelAfter  = levelAfter,
-                leveledUp   = levelAfter > levelBefore,
-                items       = items,
+            return Result(
+                frames    = frames,
+                durationMs = SkillSimulator.sessionDurationMs(),
             )
+        } finally {
+            SkillSimulator.clearAgilityContext()
         }
-
-        return Result(
-            frames    = frames,
-            durationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
-        )
     }
 
     private fun rangeForLevel(level: Int, ranges: Map<String, XpRange>): XpRange {
