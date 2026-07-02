@@ -37,36 +37,31 @@ object CarnivalSimulator {
         agilityPrestige: Int = 0,
         fairgroundsTier: Int = 0,
     ): SkillSimulator.Result {
-        SkillSimulator.setAgilityContext(agilityLevel, agilityPrestige)
-        try {
-            val tierBonus = fairgroundsTier.coerceIn(0, 3) * 0.05
-            val chance = ticketChance(relevantSkillLevel) + tierBonus
-            val baseXpFrame = xpPerFrame(activityKey)
-            val skillKey = relevantSkill(activityKey)
+        val tierBonus = fairgroundsTier.coerceIn(0, 3) * 0.05
+        val chance = ticketChance(relevantSkillLevel) + tierBonus
+        val baseXpFrame = xpPerFrame(activityKey)
+        val skillKey = relevantSkill(activityKey)
 
-            val frames = (1..FRAMES).map { minute ->
-                val tickets = if (Random.nextDouble() < chance) 1 else 0
-                val xpGain = if (petBoostPct > 0) (baseXpFrame * (1.0 + petBoostPct / 100.0)).toInt() else baseXpFrame
-                val items = if (tickets > 0) mapOf("carnival_ticket" to tickets) else emptyMap()
-                SessionFrame(
-                    minute       = minute,
-                    xpGain       = xpGain,
-                    xpBefore     = 0L,
-                    xpAfter      = 0L,
-                    levelBefore  = relevantSkillLevel,
-                    levelAfter   = relevantSkillLevel,
-                    items        = items,
-                    leveledUp    = false,
-                    xpBySkill    = mapOf(skillKey to xpGain.toLong()),
-                )
-            }
-
-            return SkillSimulator.Result(
-                frames     = frames,
-                durationMs = SkillSimulator.sessionDurationMs(),
+        val frames = (1..FRAMES).map { minute ->
+            val tickets = if (Random.nextDouble() < chance) 1 else 0
+            val xpGain = if (petBoostPct > 0) (baseXpFrame * (1.0 + petBoostPct / 100.0)).toInt() else baseXpFrame
+            val items = if (tickets > 0) mapOf("carnival_ticket" to tickets) else emptyMap()
+            SessionFrame(
+                minute       = minute,
+                xpGain       = xpGain,
+                xpBefore     = 0L,
+                xpAfter      = 0L,
+                levelBefore  = relevantSkillLevel,
+                levelAfter   = relevantSkillLevel,
+                items        = items,
+                leveledUp    = false,
+                xpBySkill    = mapOf(skillKey to xpGain.toLong()),
             )
-        } finally {
-            SkillSimulator.clearAgilityContext()
         }
+
+        return SkillSimulator.Result(
+            frames     = frames,
+            durationMs = SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige),
+        )
     }
 }

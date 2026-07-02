@@ -33,98 +33,93 @@ object ThievingSimulator {
         petDropChance: Double = 0.0,
         random: Random = Random.Default,
     ): Result {
-        SkillSimulator.setAgilityContext(agilityLevel, agilityPrestige)
-        try {
-            val successChance = (0.40 + (thievingLevel - npc.levelRequired) * 0.02)
-                .coerceIn(0.10, 0.95)
+        val successChance = (0.40 + (thievingLevel - npc.levelRequired) * 0.02)
+            .coerceIn(0.10, 0.95)
 
-            var currentXp = startXp
-            val frames = mutableListOf<SessionFrame>()
-            var stunNextFrame = false
+        var currentXp = startXp
+        val frames = mutableListOf<SessionFrame>()
+        var stunNextFrame = false
 
-            for (minute in 1..60) {
-                val xpBefore = currentXp
-                val levelBefore = XpTable.levelForXp(currentXp)
+        for (minute in 1..60) {
+            val xpBefore = currentXp
+            val levelBefore = XpTable.levelForXp(currentXp)
 
-                if (stunNextFrame) {
-                    stunNextFrame = false
-                    frames.add(
-                        SessionFrame(
-                            minute = minute,
-                            xpGain = 0,
-                            xpBefore = xpBefore,
-                            xpAfter = xpBefore,
-                            levelBefore = levelBefore,
-                            levelAfter = levelBefore,
-                            items = emptyMap(),
-                            leveledUp = false,
-                            success = false,
-                        )
-                    )
-                    continue
-                }
-
-                val success = random.nextDouble() < successChance
-                if (!success) {
-                    stunNextFrame = true
-                    frames.add(
-                        SessionFrame(
-                            minute = minute,
-                            xpGain = 0,
-                            xpBefore = xpBefore,
-                            xpAfter = xpBefore,
-                            levelBefore = levelBefore,
-                            levelAfter = levelBefore,
-                            items = emptyMap(),
-                            leveledUp = false,
-                            success = false,
-                        )
-                    )
-                    continue
-                }
-
-                val xpGain = if (petBoostPct > 0) (npc.baseXp * (1.0 + petBoostPct / 100.0)).toInt() else npc.baseXp
-                currentXp += xpGain
-                val levelAfter = XpTable.levelForXp(currentXp)
-
-                val items = mutableMapOf<String, Int>()
-
-                // Coins — random amount in npc's range
-                val coins = npc.coinsMin + random.nextInt(npc.coinsMax - npc.coinsMin + 1)
-                items["coins"] = coins
-
-                // Loot table rolls
-                for (entry in npc.lootTable) {
-                    if (random.nextDouble() < entry.chance) {
-                        val qty = if (entry.minQty == entry.maxQty) entry.minQty
-                        else entry.minQty + random.nextInt(entry.maxQty - entry.minQty + 1)
-                        items[entry.item] = (items[entry.item] ?: 0) + qty
-                    }
-                }
-
-                // Pet drop
-                if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
-                    items[petDropKey] = 1
-                }
-
+            if (stunNextFrame) {
+                stunNextFrame = false
                 frames.add(
                     SessionFrame(
                         minute = minute,
-                        xpGain = xpGain,
+                        xpGain = 0,
                         xpBefore = xpBefore,
-                        xpAfter = currentXp,
+                        xpAfter = xpBefore,
                         levelBefore = levelBefore,
-                        levelAfter = levelAfter,
-                        items = items,
-                        leveledUp = levelAfter > levelBefore,
-                        success = true,
+                        levelAfter = levelBefore,
+                        items = emptyMap(),
+                        leveledUp = false,
+                        success = false,
                     )
                 )
+                continue
             }
 
-            return Result(frames, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
+            val success = random.nextDouble() < successChance
+            if (!success) {
+                stunNextFrame = true
+                frames.add(
+                    SessionFrame(
+                        minute = minute,
+                        xpGain = 0,
+                        xpBefore = xpBefore,
+                        xpAfter = xpBefore,
+                        levelBefore = levelBefore,
+                        levelAfter = levelBefore,
+                        items = emptyMap(),
+                        leveledUp = false,
+                        success = false,
+                    )
+                )
+                continue
+            }
+
+            val xpGain = if (petBoostPct > 0) (npc.baseXp * (1.0 + petBoostPct / 100.0)).toInt() else npc.baseXp
+            currentXp += xpGain
+            val levelAfter = XpTable.levelForXp(currentXp)
+
+            val items = mutableMapOf<String, Int>()
+
+            // Coins — random amount in npc's range
+            val coins = npc.coinsMin + random.nextInt(npc.coinsMax - npc.coinsMin + 1)
+            items["coins"] = coins
+
+            // Loot table rolls
+            for (entry in npc.lootTable) {
+                if (random.nextDouble() < entry.chance) {
+                    val qty = if (entry.minQty == entry.maxQty) entry.minQty
+                    else entry.minQty + random.nextInt(entry.maxQty - entry.minQty + 1)
+                    items[entry.item] = (items[entry.item] ?: 0) + qty
+                }
+            }
+
+            // Pet drop
+            if (petDropKey != null && petDropChance > 0.0 && random.nextDouble() < petDropChance) {
+                items[petDropKey] = 1
+            }
+
+            frames.add(
+                SessionFrame(
+                    minute = minute,
+                    xpGain = xpGain,
+                    xpBefore = xpBefore,
+                    xpAfter = currentXp,
+                    levelBefore = levelBefore,
+                    levelAfter = levelAfter,
+                    items = items,
+                    leveledUp = levelAfter > levelBefore,
+                    success = true,
+                )
+            )
         }
+
+        return Result(frames, SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige))
     }
 }

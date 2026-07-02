@@ -26,54 +26,49 @@ object SkillingDungeonSimulator {
         petBoostPct: Int = 0,
         random: Random = Random.Default,
     ): SkillSimulator.Result {
-        SkillSimulator.setAgilityContext(agilityLevel, agilityPrestige)
-        try {
-            var currentXp = startXp
-            val frames = mutableListOf<SessionFrame>()
-            val noteKey = "note_$dungeonKey"
+        var currentXp = startXp
+        val frames = mutableListOf<SessionFrame>()
+        val noteKey = "note_$dungeonKey"
 
-            for (minute in 1..60) {
-                val xpBefore = currentXp
-                val levelBefore = XpTable.levelForXp(currentXp)
+        for (minute in 1..60) {
+            val xpBefore = currentXp
+            val levelBefore = XpTable.levelForXp(currentXp)
 
-                val xpRange = getTierData(dungeon.xpRanges, levelBefore)
-                val baseXp = (random.nextInt(xpRange.min, xpRange.max + 1) * toolEfficiency).toInt()
-                val xpGain = if (petBoostPct > 0) (baseXp * (1.0 + petBoostPct / 100.0)).toInt() else baseXp
+            val xpRange = getTierData(dungeon.xpRanges, levelBefore)
+            val baseXp = (random.nextInt(xpRange.min, xpRange.max + 1) * toolEfficiency).toInt()
+            val xpGain = if (petBoostPct > 0) (baseXp * (1.0 + petBoostPct / 100.0)).toInt() else baseXp
 
-                currentXp += xpGain
-                val levelAfter = XpTable.levelForXp(currentXp)
+            currentXp += xpGain
+            val levelAfter = XpTable.levelForXp(currentXp)
 
-                val dropTable = if (dungeon.dropTables.isEmpty()) emptyList()
-                                else getTierData(dungeon.dropTables, levelBefore)
-                val items = mutableMapOf<String, Int>()
-                for (entry in dropTable) {
-                    if (random.nextDouble() < entry.chance) {
-                        items[entry.item] = (items[entry.item] ?: 0) + 1
-                    }
+            val dropTable = if (dungeon.dropTables.isEmpty()) emptyList()
+                            else getTierData(dungeon.dropTables, levelBefore)
+            val items = mutableMapOf<String, Int>()
+            for (entry in dropTable) {
+                if (random.nextDouble() < entry.chance) {
+                    items[entry.item] = (items[entry.item] ?: 0) + 1
                 }
-
-                if (random.nextDouble() < dungeon.noteChancePerFrame) {
-                    items[noteKey] = (items[noteKey] ?: 0) + 1
-                }
-
-                frames.add(
-                    SessionFrame(
-                        minute = minute,
-                        xpGain = xpGain,
-                        xpBefore = xpBefore,
-                        xpAfter = currentXp,
-                        levelBefore = levelBefore,
-                        levelAfter = levelAfter,
-                        items = items,
-                        leveledUp = levelAfter > levelBefore,
-                    )
-                )
             }
 
-            return SkillSimulator.Result(frames, SkillSimulator.sessionDurationMs())
-        } finally {
-            SkillSimulator.clearAgilityContext()
+            if (random.nextDouble() < dungeon.noteChancePerFrame) {
+                items[noteKey] = (items[noteKey] ?: 0) + 1
+            }
+
+            frames.add(
+                SessionFrame(
+                    minute = minute,
+                    xpGain = xpGain,
+                    xpBefore = xpBefore,
+                    xpAfter = currentXp,
+                    levelBefore = levelBefore,
+                    levelAfter = levelAfter,
+                    items = items,
+                    leveledUp = levelAfter > levelBefore,
+                )
+            )
         }
+
+        return SkillSimulator.Result(frames, SkillSimulator.sessionDurationMs(agilityLevel, agilityPrestige))
     }
 
     private fun <T> getTierData(tiers: Map<String, T>, currentLevel: Int): T {
